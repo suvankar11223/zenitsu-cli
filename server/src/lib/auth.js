@@ -12,9 +12,23 @@ export const auth = betterAuth({
   trustedOrigins: ["http://localhost:3000"],
 
   advanced: {
+    // -----------------------------------------------------------------
+    // Add a custom `device` field to the user/session records
+    // -----------------------------------------------------------------
+    // This will allow us to store a device identifier (e.g., "cli", "web")
+    // during sign‑in.
+    // -----------------------------------------------------------------
+    // Note: the `additionalFields` block is added just after `advanced`
+    // -----------------------------------------------------------------
     defaultCookieAttributes: {
       sameSite: "lax",
     },
+  },
+  // -----------------------------------------------------------------
+  // Register the custom `device` field so it is persisted in the DB.
+  // -----------------------------------------------------------------
+  additionalFields: {
+    device: { type: "string", optional: true },
   },
 
   plugins: [

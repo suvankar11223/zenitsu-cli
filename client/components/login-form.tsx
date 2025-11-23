@@ -33,7 +33,10 @@ export function LoginForm() {
     setIsLoading(true);
     await authClient.signIn.social({
       provider: "github",
-      callbackURL: "http://localhost:3000"
+      // Pass a device identifier (adjust as needed)
+      additionalData: { device: "web" },
+      // callbackURL is optional on Render; keep if needed locally
+      // callbackURL: "http://localhost:3000"
     })
     setIsLoading(false);
   }

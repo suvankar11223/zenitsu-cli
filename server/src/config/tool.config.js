@@ -1,42 +1,69 @@
 import chalk from 'chalk';
+import { DynamicTool } from '@langchain/core/tools';
+import { CodebaseIndexer } from '../ai/rag.js';
+
+// Singleton indexer
+let indexer = null;
+
+function getIndexer() {
+  if (!indexer) {
+    indexer = new CodebaseIndexer(process.cwd());
+  }
+  return indexer;
+}
 
 /**
  * Available Google Generative AI tools configuration
- * Note: Tools are now enabled natively in the Gemini model configuration (google-service.js)
- * This config file is kept for metadata and future extensibility.
  */
 export const availableTools = [
   {
     id: 'google_search',
     name: 'Google Search',
     description: 'Access the latest information using Google search. (Native Gemini Tool)',
-    getTool: () => null,
+    getTool: () => null, // Native
     enabled: true,
   },
   {
     id: 'code_execution',
     name: 'Code Execution',
     description: 'Generate and execute Python code. (Native Gemini Tool)',
-    getTool: () => null,
+    getTool: () => null, // Native
     enabled: true,
   },
+  {
+    id: 'search_codebase',
+    name: 'Search Codebase',
+    description: 'Search the local project codebase for code snippets, functions, or logic.',
+    getTool: () => new DynamicTool({
+      name: "search_codebase",
+      description: "Search the local project codebase for code snippets, functions, or logic. Input should be a search query string.",
+      func: async (query) => {
+        try {
+          const idx = getIndexer();
+          const results = await idx.search(query);
+          return JSON.stringify(results, null, 2);
+        } catch (error) {
+          return "Error searching codebase: " + error.message;
+        }
+      }
+    }),
+    enabled: true,
+  }
 ];
 
 /**
  * Get enabled tools as a tools object for LangChain
  */
 export function getEnabledTools() {
-  // Tools are handled natively by the model config in google-service.js
-  // We return undefined here because we don't need to pass separate LangChain tool objects
-  // for Gemini's native tools.
+  const tools = [];
+  availableTools.forEach(t => {
+    if (t.enabled && t.getTool) {
+      const toolInstance = t.getTool();
+      if (toolInstance) tools.push(toolInstance);
+    }
+  });
 
-  const enabledTools = availableTools.filter(t => t.enabled).map(t => t.name);
-
-  if (enabledTools.length > 0) {
-    console.log(chalk.gray(`[DEBUG] Native Gemini Tools Enabled: ${enabledTools.join(', ')} `));
-  }
-
-  return undefined;
+  return tools.length > 0 ? tools : [];
 }
 
 /**
